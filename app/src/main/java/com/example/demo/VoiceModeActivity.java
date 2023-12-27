@@ -18,30 +18,13 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.text.method.ScrollingMovementMethod;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.vosk.LibVosk;
-import org.vosk.LogLevel;
-import org.vosk.Model;
-import org.vosk.Recognizer;
-import org.vosk.android.RecognitionListener;
-import org.vosk.android.SpeechService;
-import org.vosk.android.SpeechStreamService;
-import org.vosk.android.StorageService;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -56,6 +39,22 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.demo.util.JsonParser;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.vosk.LibVosk;
+import org.vosk.LogLevel;
+import org.vosk.Model;
+import org.vosk.Recognizer;
+import org.vosk.android.RecognitionListener;
+import org.vosk.android.SpeechService;
+import org.vosk.android.SpeechStreamService;
+import org.vosk.android.StorageService;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Objects;
 
 
 public class VoiceModeActivity extends Activity implements
@@ -95,6 +94,8 @@ public class VoiceModeActivity extends Activity implements
     private ArrayList<MessageModel> messageModalArrayList;
     private MessageRVAdapter messageRVAdapter;
 
+    TextToSpeech textToSpeech;
+
 
     @Override
     public void onCreate(Bundle state) {
@@ -105,6 +106,35 @@ public class VoiceModeActivity extends Activity implements
         sendMsgIB = findViewById(R.id.main_send);
         chatsRV = findViewById(R.id.voice_mode_rv);
         userMsgEdt = findViewById(R.id.voice_mode_ed);
+
+        textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int i) {
+                if(i != TextToSpeech.ERROR) {
+                    textToSpeech.setLanguage(Locale.ENGLISH);
+                    textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                        @Override
+                        public void onStart(String s) {
+                            System.out.println("Speaking");
+                            pause(true);//Speech recognitions pause
+                        }
+
+                        @Override
+                        public void onDone(String s) {
+                            //Here s denotes Utterance id
+                            System.out.println("Speak end");
+                            pause(false);//Speech recognitions pause
+                        }
+
+                        @Override
+                        public void onError(String s) {
+                            System.out.println("Speaking Error");
+                        }
+                    });
+                }
+            }
+        });
+
 
 
         setUiState(STATE_START);
@@ -170,6 +200,13 @@ public class VoiceModeActivity extends Activity implements
 
     }
 
+    private void scrollToRecyclerViewEnd() {
+        if (messageRVAdapter.getItemCount() > 0) {
+            int lastIndex = messageRVAdapter.getItemCount() - 1;
+            chatsRV.smoothScrollToPosition(lastIndex);
+        }
+    }
+
     private void initModel() {
         StorageService.unpack(this, "model-en-us", "model",
                 (model) -> {
@@ -208,16 +245,20 @@ public class VoiceModeActivity extends Activity implements
         if (speechStreamService != null) {
             speechStreamService.stop();
         }
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+        }
     }
 
     @Override
     public void onResult(String hypothesis) {
         System.out.println("onResult "+hypothesis);
-        if(!Objects.equals(JsonParser.parseTextValue(hypothesis), "")){
-            sendMessage(JsonParser.parseTextValue(hypothesis));
+        String finalText = JsonParser.parseTextValue(hypothesis,"text");
+        if(!Objects.equals(finalText, "")){
+            sendMessage(finalText);
         }
-
-//        resultView.append(hypothesis + "\n");
+        userMsgEdt.setHint("");
     }
 
     @Override
@@ -232,7 +273,13 @@ public class VoiceModeActivity extends Activity implements
 
     @Override
     public void onPartialResult(String hypothesis) {
-//        resultView.append(hypothesis + "\n");
+        System.out.println(hypothesis);
+        String partialText = JsonParser.parseTextValue(hypothesis,"partial");
+        if(!Objects.equals(partialText, "")){
+            if(partialText!= null) {
+                userMsgEdt.setHint(partialText);
+            }
+        }
     }
 
     @Override
@@ -334,15 +381,16 @@ public class VoiceModeActivity extends Activity implements
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
-                System.out.println("Hello BOy");
                 try {
                     // in on response method we are extracting data
                     // from json response and adding this response to our array list.
                     String botResponse = response.getString("cnt");
+                    TextToSpeechEngine(botResponse);
                     messageModalArrayList.add(new MessageModel(botResponse, BOT_KEY));
 
                     // notifying our adapter as data changed.
                     messageRVAdapter.notifyDataSetChanged();
+                    scrollToRecyclerViewEnd();
                 } catch (JSONException e) {
                     e.printStackTrace();
 
@@ -364,5 +412,10 @@ public class VoiceModeActivity extends Activity implements
         // request to our queue.
         queue.add(jsonObjectRequest);
     }
+
+    private void TextToSpeechEngine(String text) {
+        textToSpeech.speak(text,TextToSpeech.QUEUE_FLUSH,null,"1");
+    }
+
 
 }

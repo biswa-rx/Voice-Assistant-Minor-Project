@@ -4,13 +4,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class JsonParser {
-    public static String parseTextValue(String jsonString) {
+    public static String parseTextValue(String jsonString,String key) {
         try {
             // Parse the JSON string
             JSONObject jsonObject = new JSONObject(jsonString);
 
             // Extract the value of the "text" field
-            return jsonObject.getString("text");
+            return jsonObject.getString(key);
         } catch (JSONException e) {
             // Handle JSON parsing exceptions
             e.printStackTrace();
