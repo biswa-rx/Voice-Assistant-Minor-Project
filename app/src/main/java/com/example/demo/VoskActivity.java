@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.vosk.demo;
+package com.example.demo;
 
 import android.Manifest;
 import android.app.Activity;
