@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.example.demo;
+package com.example.demo.ui;
 
 import android.Manifest;
 import android.app.Activity;
@@ -38,6 +38,9 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.example.demo.model.MessageModel;
+import com.example.demo.adapter.MessageRVAdapter;
+import com.example.demo.R;
 import com.example.demo.util.JsonParser;
 
 import org.json.JSONException;
@@ -419,3 +422,5 @@ public class VoiceModeActivity extends Activity implements
 
 
 }
+
+

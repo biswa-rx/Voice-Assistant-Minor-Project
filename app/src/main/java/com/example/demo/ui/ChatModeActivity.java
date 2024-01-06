@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.ui;
 
 
 import android.os.Bundle;
@@ -17,6 +17,9 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.example.demo.model.MessageModel;
+import com.example.demo.adapter.MessageRVAdapter;
+import com.example.demo.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
